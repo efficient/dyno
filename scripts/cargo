@@ -1,0 +1,77 @@
+#!/bin/sh
+
+args="`printf "'%s' " "$@"`"
+if [ "$1" != "rustc" ]
+then
+	case "$args" in
+	*"'build'"*)
+		# Instruct the output file to search for dependencies in the deps/ subdirectory and
+		# its own at load time.  This makes it possible to invoke directly without having to
+		# add $LD_LIBRARY_PATH to the environment.
+		eval set -- `echo "$args" | sed "s/'build'/'rustc'/"` -- "-Clink-arg=-Wl,-R\\\$ORIGIN/deps:\\\$ORIGIN"
+		;;
+	esac
+
+	# Disable build pipelining so --extern switches pass *.rlib filenames instead of brittle
+	# *.rmeta files that would prevent us from disallowing static linking.
+	RUSTC_WRAPPER="$0" CARGO_BUILD_PIPELINING="false" exec cargo "$@"
+fi
+
+if [ -z "$CARGO_CRATE_NAME" ]
+then
+	# To determine rustc's filename patterns, cargo invokes it with no input file and
+	# --crate-name ___.  Because there is no manifest, this is the only time cargo doesn't
+	# provide a crate name via the environment.  We need to leave rustc's output untouched!
+	exec "$@"
+fi
+
+# Link against *.so files instead of *.rlib ones.  Never build static libraries or C shared
+# libraries, both of which can interfere if present.
+args="`echo "$args" | sed -e"s/\('--extern' '[^']\+\.\)rlib\('\)/\1so\2/g" -e"s/'--crate-type' '\(static\|cdy\)lib'//g"`"
+case "$args" in
+*"'--crate-type' 'lib'"*|*"'--crate-type' 'rlib'"*)
+	rustc="`which rustc`"
+
+	# The Rust compiler doesn't like to build #![no_std] crates as shared libraries.  Work
+	# around it by linking against libstd instead of libcore!
+	std="`ldd "$rustc" | grep -o '/.\+/libstd-.\+\.so'`"
+
+	# Build a shared library instead of a dynamic one.  Instruct it to search its own directory
+	# for dependencies at load time.  Treat undefined symbols and dynamic relocations in the
+	# .text section as link errors.
+	args="`echo "$args" | sed "s/\('--crate-type' '\)r\?\(lib'\)/\1dy\2/g"` '-Cprefer-dynamic' '-Clink-arg=-Wl,-R\$ORIGIN' '--extern' 'core=$std' '-Clink-arg=-zdefs' '-Clink-arg=-ztext'"
+
+	if [ "$CARGO_CRATE_NAME" = "v8" ]
+	then
+		mydir="`dirname "$0"`"
+
+		# Link v8 with --whole-archive so we don't end up with a broken partial engine.  The
+		# Rust compiler wants to hide the non-Rust symbols, so use a wrapper script to
+		# filter out the --version-script switch from the linker invocation.
+		args="`echo "$args" | sed "s/'\(-l\)' 'static=\(rusty_v8\)'/'-Clink-arg=-Wl,--whole-archive' '-Clink-arg=\1\2' '-Clink-arg=-Wl,--no-whole-archive'/"` '-Clinker=$mydir/cc' '-Clink-arg=-lc_nonshared' '-Clink-arg=-ldl' '-Clink-arg=-lm'"
+		objdir="`echo "$LD_LIBRARY_PATH" | cut -d: -f1`/../gn_out/obj"
+		if [ ! -e "$objdir/binding.o" ]
+		then
+			ar x "$objdir/librusty_v8.a" binding.o --output "$objdir"
+
+			# The v8 C FFI symbols are hidden, preventing their conversion into dynamic
+			# symbols by default.  But deno_core links against them, so use our custom
+			# tool to set them to default visibility.
+			"$mydir/../objunhide/target/release/objunhide" "$objdir/binding.o" 'v8_.*' >/dev/null
+			ar rs "$objdir/librusty_v8.a" "$objdir/binding.o"
+
+			# These references are to symbols in the dynamic linker.  Weaken them so we
+			# will be able to link without declaring a superfluous dependency on ld.so.
+			objcopy -W__libc_stack_end -W__tls_get_addr "$objdir/librusty_v8.a"
+		fi
+	elif [ "$CARGO_CRATE_NAME" = "libffi" ]
+	then
+		args="$args '-lffi'"
+	elif [ "$CARGO_CRATE_NAME" = "rusqlite" ]
+	then
+		args="$args '-lsqlite3'"
+	fi
+	;;
+esac
+
+eval exec "$args"
