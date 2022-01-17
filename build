@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -e
+cd "`dirname "$0"`/objunhide"
+cargo build --release
+git submodule update --init --recursive
+cd ../deno/cli
+exec "../../scripts/cargo" build "$@"
