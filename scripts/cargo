@@ -41,6 +41,10 @@ case "$args" in
 	# .text section as link errors.
 	args="`echo "$args" | sed "s/\('--crate-type' '\)r\?\(lib'\)/\1dy\2/g"` '-Cprefer-dynamic' '-Clink-arg=-Wl,-R\$ORIGIN' '--extern' 'core=$std' '-Clink-arg=-zdefs' '-Clink-arg=-ztext'"
 
+	# It is nonsensical to link a shared library from LLVM bitcode files, so make sure we
+	# produce object files even for release builds.
+	args="`echo "$args" | sed "s/'-C' 'linker-plugin-lto'//g"`"
+
 	if [ "$CARGO_CRATE_NAME" = "v8" ]
 	then
 		mydir="`dirname "$0"`"
