@@ -36,7 +36,7 @@ case "$args" in
 	# around it by linking against libstd instead of libcore!
 	std="`ldd "$rustc" | grep -o '/.\+/libstd-.\+\.so'`"
 
-	# Build a shared library instead of a dynamic one.  Instruct it to search its own directory
+	# Build a shared library instead of a static one.  Instruct it to search its own directory
 	# for dependencies at load time.  Treat undefined symbols and dynamic relocations in the
 	# .text section as link errors.
 	args="`echo "$args" | sed "s/\('--crate-type' '\)r\?\(lib'\)/\1dy\2/g"` '-Cprefer-dynamic' '-Clink-arg=-Wl,-R\$ORIGIN' '--extern' 'core=$std' '-Clink-arg=-zdefs' '-Clink-arg=-ztext'"
