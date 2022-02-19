@@ -15,7 +15,9 @@ fi
 
 sample() {
 	local stats="`time -f"%U,%S,%e,%M,%F,%R" "$@" 2>&1`"
-	printf "%s,%s\n" "$stats" "$((`echo "$stats" | cut -d, -f5- | tr , +`))"
+	local mbs="$((`echo "$stats" | cut -d, -f4`/1024))"
+	local pfs="`echo "$stats" | cut -d, -f5-`,$((`echo "$stats" | cut -d, -f5- | tr , +`))"
+	printf "%s,%s,%s\n" "`echo "$stats" | cut -d, -f-3`" "$mbs" "$pfs"
 }
 
 mydir="`dirname "$0"`"

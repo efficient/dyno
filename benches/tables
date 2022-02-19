@@ -34,5 +34,5 @@ filter() {
 
 stats="`tail -n+3 "$infile"`"
 filter times "Time vs. libsets" "Number of libsets initialized" "Execution time (s)" user,system,real 2-4 "$stats"
-filter memory "Memory vs. libsets" "Number of libsets initialized" "Maximum resident set size (KB)" "" 5 "$stats"
+filter memory "Memory vs. libsets" "Number of libsets initialized" "Maximum resident set size (MB)" "" 5 "$stats"
 filter faults "Page faults vs. libsets" "Number of libsets initialized" "Number of page faults" major,minor,total 6-8 "$stats"
