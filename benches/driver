@@ -1,0 +1,87 @@
+#!/bin/sh
+
+if [ "$#" -eq "0" ]
+then
+	echo "USAGE: $0 <logfile> <csvfile> [cargo arg]..."
+	exit 1
+fi
+
+mydir="`dirname "$0"`"
+logfile="$1"
+csvfile="$2"
+shift 2
+
+set -e
+if [ ! -e libgotcha.so ]
+then
+	echo "Place a symlink to libgotcha at ./libgotcha.so" >&2
+	exit 2
+fi
+if [ ! -e ld.so ]
+then
+	echo "Place a symlink to a patched dynamic linker at ./ld.so" >&2
+	exit 3
+fi
+./ld.so --version | head -n1 | tee "$logfile"
+
+bsvfile="`echo "$csvfile" | sed 's/\./-baseline&/'`"
+if [ -e "$bsvfile" ]
+then
+	echo "Skipping generation of $bsvfile, which already exits" | tee -a "$logfile"
+else
+	if [ -e deno_baseline ]
+	then
+		echo "Skipping build of deno_baseline, which already exists" | tee -a "$logfile"
+	else
+		echo "Building (mostly) statically-linked deno_baseline..." | tee -a "$logfile"
+		"$mydir/build_baseline" --release "$@" -- -Clink-arg=-Wl,-I./ld.so
+	fi
+
+	echo "Collecting baseline metrics into $bsvfile..." | tee -a "$logfile"
+	"$mydir/table" "$bsvfile" ./deno_baseline >/dev/null
+fi
+
+deno="$mydir/../deno/target/release/deno"
+if [ -e "$csvfile" ]
+then
+	echo "Skipping generation of $csvfile, which already exits" | tee -a "$logfile"
+else
+	if [ -e "$deno" ]
+	then
+		echo "Skipping build of deno, which already exits" | tee -a "$logfile"
+	else
+		echo "Building (fully) dynamically-linked deno..." | tee -a "$logfile"
+		"$mydir/../build" rustc --release "$@" -- -Clink-arg=-Wl,-I./ld.so
+	fi
+
+	echo "Collecting worst-case metrics into $csvfile..." | tee -a "$logfile"
+	"$mydir/table" "$csvfile" "$deno" >/dev/null
+fi
+echo "Rust shared libraries loaded by our deno build:" | tee -a "$logfile"
+du -ch `LD_TRACE_LOADED_OBJECTS= "$deno" | grep -F /deps/ | cut -d" " -f3 | sort` | tee -a "$logfile"
+echo | tee -a "$logfile"
+
+# Warmup
+"$mydir/run" ./deno_baseline run --unstable --allow-ffi "$mydir/renew.ts" >/dev/null
+
+echo "Baseline reinitialization metric:" | tee -a "$logfile"
+NO_COLOR= "$mydir/run" ./deno_baseline run --unstable --allow-ffi "$mydir/renew.ts" | tee -a "$logfile"
+echo | tee -a "$logfile"
+
+# Warmup
+"$mydir/run" "$deno" run --unstable --allow-ffi "$mydir/renew.ts" >/dev/null
+
+echo "Worst-case reinitialization metric:" | tee -a "$logfile"
+NO_COLOR= "$mydir/run" "$deno" run --unstable --allow-ffi "$mydir/renew.ts" | tee -a "$logfile"
+
+if [ -e linegraph ]
+then
+	echo "Generating graphs..."
+	for file in `"$mydir/tables" "$bsvfile"` `"$mydir/tables" "$csvfile"`
+	do
+		./linegraph "`echo "$file" | sed 's/\..*/.pdf/'`" <"$file"
+		rm "$file"
+	done
+else
+	echo "Not graphing because there is no tool symlinked as ./linegraph"
+fi

@@ -38,7 +38,7 @@ sample "$deno" eval "" >/dev/null
 sample "$mydir/run" "$deno" eval "" >/dev/null
 
 git log --oneline --abbrev-commit --no-decorate -1 | tee "$outfile"
-./ld.so --version | head -n1 | tee -a "$outfile"
+ls -lh "$deno" | tee -a "$outfile"
 printf "0," | tee -a "$outfile"
 sample "$deno" eval "" | tee -a "$outfile"
 for libsets in `seq 1 15`

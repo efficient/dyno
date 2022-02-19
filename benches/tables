@@ -26,7 +26,7 @@ filter() {
 	then
 		xaxis=",$series"
 	fi
-	echo "Writing $outfile"
+	echo "$outfile"
 	echo "$title,$yaxis" >"$outfile"
 	echo "$xaxis$series" >>"$outfile"
 	echo "$stats" | cut -d, -f"1,$columns" >>"$outfile"
