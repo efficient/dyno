@@ -1,0 +1,13 @@
+diff --git i/sysdeps/generic/ldsodefs.h w/sysdeps/generic/ldsodefs.h
+index aab7245e93..dd4f9107e4 100644
+--- i/sysdeps/generic/ldsodefs.h
++++ w/sysdeps/generic/ldsodefs.h
+@@ -450,7 +450,7 @@ struct rtld_global
+ /* Number of additional entries in the slotinfo array of each slotinfo
+    list element.  A large number makes it almost certain take we never
+    have to iterate beyond the first element in the slotinfo list.  */
+-#define TLS_SLOTINFO_SURPLUS (62)
++#define TLS_SLOTINFO_SURPLUS (299)
+ 
+ /* Number of additional slots in the dtv allocated.  */
+ #define DTV_SURPLUS	(14)

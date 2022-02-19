@@ -1,0 +1,36 @@
+#!/bin/sh
+
+if [ "$#" -ne "1" ]
+then
+	echo "USAGE: $0 <outfile>"
+	exit 1
+fi
+
+outfile="$1"
+if [ -e "$outfile" ]
+then
+	echo "$outfile: Already exists!" >&2
+	exit 2
+fi
+
+sample() {
+	local stats="`time -f"%U,%S,%e,%M,%F,%R" "$@" 2>&1`"
+	printf "%s,%s\n" "$stats" "$((`echo "$stats" | cut -d, -f5- | tr , +`))"
+}
+
+mydir="`dirname "$0"`"
+deno="$mydir/../deno/target/release/deno"
+
+# Warmup
+sample "$deno" eval "" >/dev/null
+sample "$mydir/run" "$deno" eval "" >/dev/null
+
+git log --oneline --abbrev-commit --no-decorate -1 | tee "$outfile"
+./ld.so --version | head -n1 | tee -a "$outfile"
+printf "0," | tee -a "$outfile"
+sample "$deno" eval "" | tee -a "$outfile"
+for libsets in `seq 1 15`
+do
+	printf "%s," "$libsets" | tee -a "$outfile"
+	LIBGOTCHA_NUMGROUPS="$libsets" sample "$mydir/run" "$deno" eval "" | tee -a "$outfile"
+done

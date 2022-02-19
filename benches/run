@@ -1,0 +1,4 @@
+#!/bin/sh
+
+dir="`dirname "$1"`/deps"
+LD_PRELOAD=./libgotcha.so LD_LIBRARY_PATH="$dir" GLIBC_TUNABLES=glibc.rtld.optional_static_tls=0x2000 exec "$@"

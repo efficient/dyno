@@ -1,0 +1,38 @@
+#!/bin/sh
+
+if [ "$#" -ne "1" ]
+then
+	echo "USAGE: $0 <infile>"
+	exit 1
+fi
+
+infile="$1"
+if [ ! -e "$infile" ]
+then
+	echo "$infile: Does not exist!" >&2
+	exit 2
+fi
+
+filter() {
+	local infix="$1"
+	local title="$2"
+	local xaxis="$3"
+	local yaxis="$4"
+	local series="$5"
+	local columns="$6"
+	local stats="$7"
+	local outfile="`echo "$infile" | sed "s/\./-$infix&/"`"
+	if [ -n "$series" ]
+	then
+		xaxis=",$series"
+	fi
+	echo "Writing $outfile"
+	echo "$title,$yaxis" >"$outfile"
+	echo "$xaxis$series" >>"$outfile"
+	echo "$stats" | cut -d, -f"1,$columns" >>"$outfile"
+}
+
+stats="`tail -n+3 "$infile"`"
+filter times "Time vs. libsets" "Number of libsets initialized" "Execution time (s)" user,system,real 2-4 "$stats"
+filter memory "Memory vs. libsets" "Number of libsets initialized" "Maximum resident set size (KB)" "" 5 "$stats"
+filter faults "Page faults vs. libsets" "Number of libsets initialized" "Number of page faults" major,minor,total 6-8 "$stats"
