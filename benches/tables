@@ -24,7 +24,7 @@ filter() {
 	local outfile="`echo "$infile" | sed "s/\./-$infix&/"`"
 	if [ -n "$series" ]
 	then
-		xaxis=",$series"
+		xaxis=",$series,"
 	fi
 	echo "$outfile"
 	echo "$title,$yaxis" >"$outfile"
