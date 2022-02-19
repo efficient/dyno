@@ -1,14 +1,17 @@
 #!/bin/sh
 
 args="`printf "'%s' " "$@"`"
-if [ "$1" != "rustc" ]
+if [ "$1" != "rustc" ] || echo "$args" | grep -F " '--' " >/dev/null
 then
+	# Instruct the output file to search for dependencies in the deps/ subdirectory and
+	# its own at load time.  This makes it possible to invoke directly without having to
+	# add $LD_LIBRARY_PATH to the environment.
 	case "$args" in
-	*"'build'"*)
-		# Instruct the output file to search for dependencies in the deps/ subdirectory and
-		# its own at load time.  This makes it possible to invoke directly without having to
-		# add $LD_LIBRARY_PATH to the environment.
+	"'build'"*)
 		eval set -- `echo "$args" | sed "s/'build'/'rustc'/"` -- "-Clink-arg=-Wl,-R\\\$ORIGIN/deps:\\\$ORIGIN"
+		;;
+	"'rustc'"*"'--'"*)
+		eval set -- "$@" "-Clink-arg=-Wl,-R\\\$ORIGIN/deps:\\\$ORIGIN"
 		;;
 	esac
 
