@@ -24,6 +24,12 @@ then
 fi
 ./ld.so --version | head -n1 | tee "$logfile"
 
+if ! which time >/dev/null
+then
+	echo "No 'time' program installed!" >&2
+	exit 4
+fi
+
 bsvfile="`echo "$csvfile" | sed 's/\./-baseline&/'`"
 if [ -e "$bsvfile" ]
 then
