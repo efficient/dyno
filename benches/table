@@ -34,14 +34,14 @@ then
 fi
 
 sample() {
-	local stats="`time -f"%U,%S,%e,%M,%F,%R" "$@" 2>&1`"
+	local stats="`LIBGOTCHA_NUMGROUPS="$libsets" time -f"%U,%S,%e,%M,%F,%R" "$@" 2>&1`"
 	local mbs="$((`echo "$stats" | cut -d, -f4`/1024))"
 	local pfs="`echo "$stats" | cut -d, -f5-`,$((`echo "$stats" | cut -d, -f5- | tr , +`))"
 	printf "%s,%s,%s\n" "`echo "$stats" | cut -d, -f-3`" "$mbs" "$pfs"
 }
 
 multisample() {
-	local stats="`multitime -l -n"$iters" -s0 "$@" 2>&1 | tail -n+4 | tr -s " " | tr " " , | cut -d, -f-3`"
+	local stats="`LIBGOTCHA_NUMGROUPS="$libsets" multitime -l -n"$iters" -s0 "$@" 2>&1 | tail -n+4 | tr -s " " | tr " " , | cut -d, -f-3`"
 	printf "%s," "`echo "$stats" | grep ^user, | cut -d, -f2-`"
 	printf "%s," "`echo "$stats" | grep ^sys, | cut -d, -f2-`"
 	printf "%s," "`echo "$stats" | grep ^real, | cut -d, -f2-`"
@@ -64,5 +64,5 @@ printf "0," | tee -a "$outfile"
 for libsets in `seq 1 15`
 do
 	printf "%s," "$libsets" | tee -a "$outfile"
-	LIBGOTCHA_NUMGROUPS="$libsets" "$time" "$mydir/run" "$deno" eval "" | tee -a "$outfile"
+	"$time" "$mydir/run" "$deno" eval "" | tee -a "$outfile"
 done
