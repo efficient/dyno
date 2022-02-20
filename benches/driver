@@ -17,12 +17,14 @@ then
 	echo "Place a symlink to libgotcha at ./libgotcha.so" >&2
 	exit 2
 fi
+echo "$0 `git log --oneline -1 | cut -d" " -f1` invoked with cargo switches: $*" | tee "$logfile"
+
 if [ ! -e ld.so ]
 then
 	echo "Place a symlink to a patched dynamic linker at ./ld.so" >&2
 	exit 3
 fi
-./ld.so --version | head -n1 | tee "$logfile"
+./ld.so --version | head -n1 | tee -a "$logfile"
 
 if ! which multitime >/dev/null
 then
