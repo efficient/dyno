@@ -14,6 +14,7 @@ then
 fi
 
 deno="$2"
+mydir="`dirname "$0"`"
 if [ -z "$deno" ]
 then
 	deno="$mydir/../deno/target/release/deno"
@@ -49,8 +50,6 @@ multisample() {
 	printf "%s," "$((`echo "$stats" | grep ^...flt, | cut -d, -f2 | paste -sd+`))"
 	echo 0
 }
-
-mydir="`dirname "$0"`"
 
 # Warmup
 "$deno" eval "" >/dev/null
