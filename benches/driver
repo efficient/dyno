@@ -24,10 +24,14 @@ then
 fi
 ./ld.so --version | head -n1 | tee "$logfile"
 
-if ! which time >/dev/null
+if ! which multitime >/dev/null
 then
-	echo "No 'time' program installed!" >&2
-	exit 4
+	if ! which time >/dev/null
+	then
+		echo "No 'time' or 'multitime' program installed!" >&2
+		exit 4
+	fi
+	echo "No 'multitime' program installed; falling back to single-iterations data points" | tee -a "$logfile" >&2
 fi
 
 bsvfile="`echo "$csvfile" | sed 's/\./-baseline&/'`"
@@ -85,7 +89,13 @@ then
 	echo "Generating graphs..."
 	for file in `"$mydir/tables" "$bsvfile"` `"$mydir/tables" "$csvfile"`
 	do
-		./linegraph "`echo "$file" | sed 's/\..*/.pdf/'`" <"$file"
+		flags=""
+		if grep -F ,, "$file" >/dev/null
+		then
+			flags="-e"
+		fi
+
+		./linegraph $flags "`echo "$file" | sed 's/\..*/.pdf/'`" <"$file"
 		rm "$file"
 	done
 else

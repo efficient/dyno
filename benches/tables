@@ -32,7 +32,31 @@ filter() {
 	echo "$stats" | cut -d, -f"1,$columns" >>"$outfile"
 }
 
+multiseries() {
+	echo "$*" | sed 's/,\|$/&,/g'
+}
+
 stats="`tail -n+3 "$infile"`"
-filter times "Time vs. libsets" "Number of libsets initialized" "Execution time (s)" user,system,real 2-4 "$stats"
-filter memory "Memory vs. libsets" "Number of libsets initialized" "Maximum resident set size (MB)" "" 5 "$stats"
-filter faults "Page faults vs. libsets" "Number of libsets initialized" "Number of page faults" major,minor,total 6-8 "$stats"
+numcols="`echo "$stats" | head -n1 | tr -dc , | wc -c`"
+if [ "$numcols" -eq "7" ]
+then
+	# No standard deviations
+	slabels="echo"
+	times="2-4"
+	memory="5"
+	faults="6-"
+elif [ "$numcols" -eq "14" ]
+then
+	# Has standard deviations
+	slabels="multiseries"
+	times="2-7"
+	memory="8-9"
+	faults="10-"
+else
+	echo "Unexpected number ($numcols) of commas per line!" >&2
+	exit 3
+fi
+
+filter times "Time vs. libsets" "Number of libsets initialized" "Execution time (s)" "`"$slabels" user,system,real`" "$times" "$stats"
+filter memory "Memory vs. libsets" "Number of libsets initialized" "Maximum resident set size (MB)" "`"$slabels" ""`" "$memory" "$stats"
+filter faults "Page faults vs. libsets" "Number of libsets initialized" "Number of page faults" "`"$slabels" major,minor,total`" "$faults" "$stats"
