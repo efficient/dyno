@@ -1,6 +1,6 @@
 import { BenchmarkTimer, bench, runBenchmarks } from '../deno/test_util/std/testing/bench.ts';
 
-const gotcha = Deno.dlopen('libgotcha.so', {
+const gotcha = Deno.dlopen('./libgotcha.so', {
 	libgotcha_group_limit: {
 		parameters: [],
 		result: 'u64',
