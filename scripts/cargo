@@ -56,7 +56,14 @@ case "$args" in
 		# Rust compiler wants to hide the non-Rust symbols, so use a wrapper script to
 		# filter out the --version-script switch from the linker invocation.
 		args="`echo "$args" | sed "s/'\(-l\)' 'static=\(rusty_v8\)'/'-Clink-arg=-Wl,--whole-archive' '-Clink-arg=\1\2' '-Clink-arg=-Wl,--no-whole-archive'/"` '-Clinker=$mydir/cc' '-Clink-arg=-lc_nonshared' '-Clink-arg=-ldl' '-Clink-arg=-lm'"
-		objdir="`echo "$LD_LIBRARY_PATH" | cut -d: -f1`/../gn_out/obj"
+
+		depsdir="`echo "$LD_LIBRARY_PATH" | cut -d: -f1`"
+		while fuser "$depsdir/../build/lib_download.fslock" >/dev/null
+		do
+			sleep 2
+		done
+
+		objdir="$depsdir/../gn_out/obj"
 		if [ ! -e "$objdir/binding.o" ]
 		then
 			ar x "$objdir/librusty_v8.a" binding.o --output "$objdir"
