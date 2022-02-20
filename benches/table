@@ -14,10 +14,12 @@ then
 fi
 
 deno="$2"
+iters="50"
 mydir="`dirname "$0"`"
 if [ -z "$deno" ]
 then
 	deno="$mydir/../deno/target/release/deno"
+	iters="5"
 fi
 if [ ! -e "$deno" ]
 then
@@ -39,7 +41,7 @@ sample() {
 }
 
 multisample() {
-	local stats="`multitime -l -n10 -s0 "$@" 2>&1 | tail -n+4 | tr -s " " | tr " " , | cut -d, -f-3`"
+	local stats="`multitime -l -n"$iters" -s0 "$@" 2>&1 | tail -n+4 | tr -s " " | tr " " , | cut -d, -f-3`"
 	printf "%s," "`echo "$stats" | grep ^user, | cut -d, -f2-`"
 	printf "%s," "`echo "$stats" | grep ^sys, | cut -d, -f2-`"
 	printf "%s," "`echo "$stats" | grep ^real, | cut -d, -f2-`"

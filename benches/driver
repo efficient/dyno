@@ -65,7 +65,7 @@ else
 	fi
 
 	echo "Collecting worst-case metrics into $csvfile..." | tee -a "$logfile"
-	"$mydir/table" "$csvfile" "$deno" >/dev/null
+	"$mydir/table" "$csvfile" >/dev/null
 fi
 echo "Rust shared libraries loaded by our deno build:" | tee -a "$logfile"
 du -ch `LD_TRACE_LOADED_OBJECTS= "$deno" | grep -F /deps/ | cut -d" " -f3 | sort` | tee -a "$logfile"
