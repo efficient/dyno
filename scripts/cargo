@@ -55,7 +55,7 @@ case "$args" in
 		# Link v8 with --whole-archive so we don't end up with a broken partial engine.  The
 		# Rust compiler wants to hide the non-Rust symbols, so use a wrapper script to
 		# filter out the --version-script switch from the linker invocation.
-		args="`echo "$args" | sed "s/'\(-l\)' 'static=\(rusty_v8\)'/'-Clink-arg=-Wl,--whole-archive' '-Clink-arg=\1\2' '-Clink-arg=-Wl,--no-whole-archive'/"` '-Clinker=$mydir/cc' '-Clink-arg=-lc_nonshared' '-Clink-arg=-ldl' '-Clink-arg=-lm'"
+		args="`echo "$args" | sed "s/'\(-l\)' 'static=\(rusty_v8\)'/'-Clink-arg=-Wl,--whole-archive' '-Clink-arg=\1\2' '-Clink-arg=-Wl,--no-whole-archive'/"` '-Clinker=$mydir/cc' '-Clink-arg=-ldl' '-Clink-arg=-lm'"
 
 		depsdir="`echo "$LD_LIBRARY_PATH" | cut -d: -f1`"
 		while fuser "$depsdir/../build/lib_download.fslock" >/dev/null
@@ -73,10 +73,6 @@ case "$args" in
 			# tool to set them to default visibility.
 			"$mydir/../objunhide/target/release/objunhide" "$objdir/binding.o" 'v8_.*' >/dev/null
 			ar rs "$objdir/librusty_v8.a" "$objdir/binding.o"
-
-			# These references are to symbols in the dynamic linker.  Weaken them so we
-			# will be able to link without declaring a superfluous dependency on ld.so.
-			objcopy -W__libc_stack_end -W__tls_get_addr "$objdir/librusty_v8.a"
 		fi
 	elif [ "$CARGO_CRATE_NAME" = "libffi" ]
 	then

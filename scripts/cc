@@ -1,3 +1,3 @@
 #!/bin/sh
 
-eval exec cc `printf "'%s' " "$@" | sed "s/'-Wl,--version-script=[^']\+'//g"`
+eval exec cc `printf "'%s' " "$@" | sed -e"s/'-Wl,--version-script=[^']\+'//g" -e"s/'-nodefaultlibs'//g"`
