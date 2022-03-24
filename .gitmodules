@@ -1,3 +1,3 @@
 [submodule "deno"]
 	path = deno
-	url = git://github.com/denoland/deno
+	url = https://github.com/denoland/deno
